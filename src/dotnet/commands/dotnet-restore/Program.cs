@@ -188,7 +188,10 @@ namespace Microsoft.DotNet.Tools.Restore
             var sb = new StringBuilder();
             sb.AppendLine("{");
             sb.AppendLine("    \"dependencies\": {");
-            sb.AppendLine($"        \"{tooldep.Name}\": \"{tooldep.VersionRange.OriginalString}\"");
+            sb.AppendLine($"        \"{tooldep.Name}\": {{");
+            sb.AppendLine($"            \"version\": \"{tooldep.VersionRange.OriginalString}\",");
+            sb.AppendLine("            \"target\": \"package\"");
+            sb.AppendLine("        }");
             sb.AppendLine("    },");
             sb.AppendLine("    \"frameworks\": {");
             foreach (var framework in frameworks)

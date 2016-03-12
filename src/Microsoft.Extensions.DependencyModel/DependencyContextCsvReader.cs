@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public DependencyContext Read(Stream stream)
         {
-            var lines = new List<DepsFileLine>();
+            var runtimeLines = new List<DepsFileLine>();
             using (var reader = new StreamReader(stream))
             {
                 while (!reader.EndOfStream)
@@ -30,24 +30,32 @@ namespace Microsoft.Extensions.DependencyModel
                     if (line.AssetType == "runtime" &&
                         !line.AssetPath.EndsWith(".ni.dll"))
                     {
-                        lines.Add(line);
+                        runtimeLines.Add(line);
+                    }
+                    else if (line.AssetType == "native")
+                    {
+                        runtimeLines.Add(line);
                     }
                     SkipWhitespace(reader);
                 }
             }
 
             var runtimeLibraries = new List<RuntimeLibrary>();
-            var packageGroups = lines.GroupBy(PackageIdentity);
-            foreach (var packageGroup in packageGroups)
+            var runtimePackageGroups = runtimeLines.GroupBy(PackageIdentity);
+            foreach (var packageGroup in runtimePackageGroups)
             {
                 var identity = packageGroup.Key;
                 runtimeLibraries.Add(new RuntimeLibrary(
                     type: identity.Item1,
                     name: identity.Item2,
                     version: identity.Item3,
-                    hash: identity.Item4,
-                    assemblies: packageGroup.Select(l => RuntimeAssembly.Create(l.AssetPath)),
-                    nativeLibraries: Enumerable.Empty<string>(),
+                    hash: identity.Item4
+                    assemblies: packageGroup
+                        .Where(l => l.AssetType == "runtime")
+                        .Select(l => RuntimeAssembly.Create(l.AssetPath)),
+                    nativeLibraries: packageGroup
+                        .Where(l => l.AssetType == "native")
+                        .Select(l => l.AssetPath),
                     resourceAssemblies: Enumerable.Empty<ResourceAssembly>(),
                     subTargets: Enumerable.Empty<RuntimeTarget>(),
                     dependencies: Enumerable.Empty<Dependency>(),

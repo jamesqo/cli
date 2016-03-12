@@ -14,6 +14,10 @@
         "NETStandard.Library": "1.0.0-rc2-23901"
     },
 
+    "tools": {
+        "dotnet-compile-fsc": "1.0.0-*"
+    },
+
     "frameworks": {
         "netstandardapp1.5": {
             "imports": "dnxcore50"
