@@ -313,17 +313,6 @@ cmake is required to build the native host 'corehost'";
             return c.Success();
         }
 
-        private static bool AptPackageIsInstalled(string packageName)
-        {
-            var result = Command.Create("dpkg", "-s", packageName)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .QuietBuildReporter()
-                .Execute();
-
-            return result.ExitCode == 0;
-        }
-
         private static IDictionary<string, string> ReadBranchInfo(BuildTargetContext c, string path)
         {
             var lines = File.ReadAllLines(path);
