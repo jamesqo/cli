@@ -86,8 +86,6 @@ namespace Microsoft.DotNet.Cli.Build
 
             var dotnet = DotNetCli.Stage2;
 
-            dotnet.Restore("--fallbacksource", Dirs.TestPackages)
-
             dotnet.Restore("--fallbacksource", Dirs.TestPackages, "--fallbacksource", Dirs.Packages)
                 .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "TestAssets", "TestProjects"))
                 .Execute().EnsureSuccessful();
@@ -155,7 +153,7 @@ namespace Microsoft.DotNet.Cli.Build
         {
             Rmdir(Dirs.TestPackages);
             Mkdirp(Dirs.TestPackages);
-            
+
             return c.Success();
         }
 
