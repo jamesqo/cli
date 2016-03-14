@@ -210,6 +210,13 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
             }
         }
 
+        public static void WriteDepsCsvToPath(LibraryExporter exporter, string path)
+        {
+            CreateDirectoryIfNotExists(path);
+            File.WriteAllLines(path, exporter
+                .GetDependencies(LibraryType.Package)
+                .SelectMany(GenerateLines));
+        }
 
         private static void CreateDirectoryIfNotExists(string path)
         {
