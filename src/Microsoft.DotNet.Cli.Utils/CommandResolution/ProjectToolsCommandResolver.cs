@@ -10,13 +10,19 @@ using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.ProjectModel;
 
+using LockFile = Microsoft.DotNet.ProjectModel.Graph.LockFile;
+
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class ProjectToolsCommandResolver : ICommandResolver
     {
         private static readonly NuGetFramework s_toolPackageFramework = FrameworkConstants.CommonFrameworks.NetStandardApp15;
+        
         private static readonly CommandResolutionStrategy s_commandResolutionStrategy = 
             CommandResolutionStrategy.ProjectToolsPackage;
+
+        private static readonly string s_currentRuntimeIdentifier = PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier();
+
 
         private List<string> _allowedCommandExtensions;
         private IPackagedCommandSpecFactory _packagedCommandSpecFactory;
@@ -138,9 +144,9 @@ namespace Microsoft.DotNet.Cli.Utils
             var toolPathResolver = new ToolPathResolver(nugetPackagesRoot);
 
             return toolPathResolver.GetLockFilePath(
-                string toolLibrary.Name, 
+                toolLibrary.Name, 
                 toolLibrary.VersionRange, 
-                s_toolPackageFramework)
+                s_toolPackageFramework);
         }
 
         private ProjectContext GetProjectContextFromDirectory(string directory, NuGetFramework framework)
@@ -171,31 +177,74 @@ namespace Microsoft.DotNet.Cli.Utils
         }
 
         private string GetToolDepsFilePath(
-            ToolLibrary toolLibrary, 
+            LibraryRange toolLibrary, 
             LockFile toolLockFile, 
             string depsPathRoot)
         {
-            var depsPath = Path.Combine(
+            var depsCsvPath = Path.Combine(
                 depsPathRoot,
                 toolLibrary.Name + FileNameSuffixes.Deps);
 
-            EnsureToolDepsFileExists(toolLibrary, toolLockFile, depsPath);
+            var depsJsonPath = Path.Combine(
+                depsPathRoot,
+                toolLibrary.Name + FileNameSuffixes.DepsJson);
 
-            return depsPath;
+            EnsureToolCsvDepsFileExists(toolLibrary, toolLockFile, depsCsvPath);
+            EnsureToolJsonDepsFileExists(toolLibrary, toolLockFile, depsJsonPath);
+
+            // Todo: Change this to json when on shared framework
+            return depsCsvPath;
         }
 
-        private void EnsureToolDepsFileExists(
-            ToolLibrary toolLibrary, 
+        private void EnsureToolCsvDepsFileExists(
+            LibraryRange toolLibrary, 
             LockFile toolLockFile, 
             string depsPath)
         {
-            var executable = new Executable(context, calculator, context.CreateExporter(Constants.DefaultConfiguration), null);
+            if (!File.Exists(depsPath))
+            {
+                var projectContext = new ProjectContextBuilder()
+                    .WithLockFile(toolLockFile)
+                    .WithTargetFramework(s_toolPackageFramework.ToString())
+                    .WithRuntimeIdentifiers(s_currentRuntimeIdentifier)
+                    .Build();
 
-            executable.WriteDepsCsv(depsPath, );
+                var exporter = projectContext.CreateExporter(Constants.DefaultConfiguration);
 
-            if (File.Exists(depsPath)) File.Delete(depsPath);
+                Executable.WriteDepsCsvToPath(depsPath, exporter);
+            }
+        }
 
-            File.Move(Path.Combine(calculator.RuntimeOutputPath, "bin" + FileNameSuffixes.Deps), depsPath);
+        private void EnsureToolJsonDepsFileExists(
+            LibraryRange toolLibrary, 
+            LockFile toolLockFile, 
+            string depsPath)
+        {
+            if (!File.Exists(depsPath))
+            {
+                var projectContext = new ProjectContextBuilder()
+                    .WithLockFile(toolLockFile)
+                    .WithTargetFramework(s_toolPackageFramework.ToString())
+                    .WithRuntimeIdentifiers(s_currentRuntimeIdentifier)
+                    .Build();
+
+                var exporter = projectContext.CreateExporter(Constants.DefaultConfiguration);
+
+                var dependencyContext = new DependencyContextBuilder()
+                    .Build(null, 
+                        null, 
+                        exporter.GetAllExports(), 
+                        true, 
+                        s_toolPackageFramework, 
+                        s_currentRuntimeIdentifier);
+
+                using (var fileStream = File.Create(depsPath))
+                {
+                    var dependencyContextWriter = new DependencyContextWriter();
+
+                    dependencyContextWriter.Write(dependencyContext, fileStream);
+                }
+            }
         }
     }
 }
