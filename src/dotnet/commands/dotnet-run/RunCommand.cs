@@ -126,7 +126,8 @@ namespace Microsoft.DotNet.Tools.Run
 
             // Add Nuget Packages Probing Path
             var nugetPackagesRoot = _context.PackagesDirectory;
-            var probingPathArg = $"--additionalprobingpath:{nugetPackagesRoot}";
+            var probingPathArg = "--additionalprobingpath";
+            _args.Insert(0, nugetPackagesRoot);
             _args.Insert(0, probingPathArg);
 
             // Now launch the output and give it the results
