@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyModel
                     type: identity.Item1,
                     name: identity.Item2,
                     version: identity.Item3,
-                    hash: identity.Item4
+                    hash: identity.Item4,
                     assemblies: packageGroup
                         .Where(l => l.AssetType == "runtime")
                         .Select(l => RuntimeAssembly.Create(l.AssetPath)),
