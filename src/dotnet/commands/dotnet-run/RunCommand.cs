@@ -124,6 +124,11 @@ namespace Microsoft.DotNet.Tools.Run
                 return result;
             }
 
+            // Add Nuget Packages Probing Path
+            var nugetPackagesRoot = _context.PackagesDirectory;
+            var probingPathArg = $"--additionalprobingpath:{nugetPackagesRoot}";
+            _args.Insert(0, probingPathArg);
+
             // Now launch the output and give it the results
             var outputName = _context.GetOutputPaths(Configuration).RuntimeFiles.Executable;
 
@@ -144,6 +149,8 @@ namespace Microsoft.DotNet.Tools.Run
                     outputName = "mono";
                 }
             }
+
+
 
             result = Command.Create(outputName, _args)
                 .ForwardStdOut()
