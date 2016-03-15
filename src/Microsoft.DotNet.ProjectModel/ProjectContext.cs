@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.ProjectModel
         /// </summary>
         public static ProjectContext Create(string projectPath, NuGetFramework framework, IEnumerable<string> runtimeIdentifiers)
         {
-            if (projectPath.EndsWith(Project.FileName))
+            if (projectPath.EndsWith(Project.FileName, StringComparison.OrdinalIgnoreCase))
             {
                 projectPath = Path.GetDirectoryName(projectPath);
             }
@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.ProjectModel
 
         public static ProjectContextBuilder CreateBuilder(string projectPath, NuGetFramework framework)
         {
-            if (projectPath.EndsWith(Project.FileName))
+            if (projectPath.EndsWith(Project.FileName, StringComparison.OrdinalIgnoreCase))
             {
                 projectPath = Path.GetDirectoryName(projectPath);
             }
