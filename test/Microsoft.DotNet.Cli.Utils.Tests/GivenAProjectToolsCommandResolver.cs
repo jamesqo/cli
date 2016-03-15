@@ -16,6 +16,7 @@ using Microsoft.Extensions.PlatformAbstractions;
 using System.Threading;
 using FluentAssertions;
 using NuGet.Frameworks;
+using NuGet.ProjectModel;
 
 namespace Microsoft.DotNet.Cli.Utils.Tests
 {
@@ -137,6 +138,70 @@ namespace Microsoft.DotNet.Cli.Utils.Tests
             commandPath.Should().Contain("dotnet-hello");
 
             File.Exists(commandPath).Should().BeTrue();
+        }
+
+
+        [Fact]
+        public void It_writes_a_deps_csv_file_next_to_the_lockfile()
+        {
+            var projectToolsCommandResolver = SetupProjectToolsCommandResolver();
+
+            var commandResolverArguments = new CommandResolverArguments()
+            {
+                CommandName = "dotnet-hello",
+                CommandArguments = null,
+                ProjectDirectory = s_liveProjectDirectory
+            };
+
+            var result = projectToolsCommandResolver.Resolve(commandResolverArguments);
+            result.Should().NotBeNull();
+            
+            var toolPathCalculator = new ToolPathCalculator(nugetPackagesRoot);
+
+            var lockFilePath = toolPathCalculator.GetBestLockFilePath(
+                toolLibrary.Name, 
+                toolLibrary.VersionRange, 
+                s_toolPackageFramework);
+
+            var directory = Path.GetDirectoryName(lockFilePath);
+
+            var depsCsvFile = Directory
+                .EnumerateFiles(directory)
+                .FirstOrDefault(p => Path.GetExtension(p) == FileNameSuffixes.Deps);
+
+            depsJsonFile.Should().NotBeNull();
+        }
+
+        [Fact]
+        public void It_writes_a_deps_json_file_next_to_the_lockfile()
+        {
+            var projectToolsCommandResolver = SetupProjectToolsCommandResolver();
+
+            var commandResolverArguments = new CommandResolverArguments()
+            {
+                CommandName = "dotnet-hello",
+                CommandArguments = null,
+                ProjectDirectory = s_liveProjectDirectory
+            };
+
+            var result = projectToolsCommandResolver.Resolve(commandResolverArguments);
+            result.Should().NotBeNull();
+            
+            var toolPathCalculator = new ToolPathCalculator(nugetPackagesRoot);
+
+            var lockFilePath = toolPathCalculator.GetBestLockFilePath(
+                toolLibrary.Name, 
+                toolLibrary.VersionRange, 
+                s_toolPackageFramework);
+
+            var directory = Path.GetDirectoryName(lockFilePath);
+
+            var depsJsonFile = Directory
+                .EnumerateFiles(directory)
+                .FirstOrDefault(p => Path.GetExtension(p) == FileNameSuffixes.DepsJson);
+
+            depsJsonFile.Should().NotBeNull();
+
         }
 
         private ProjectToolsCommandResolver SetupProjectToolsCommandResolver(

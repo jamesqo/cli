@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Graph;
+using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.PlatformAbstractions;
 using NuGet.Frameworks;
 using NuGet.Packaging;
@@ -102,14 +103,17 @@ namespace Microsoft.DotNet.Cli.Utils
             var lockFile = GetToolLockFile(toolLibrary, nugetPackagesRoot);
             var lockFilePackageLibrary = lockFile.PackageLibraries.FirstOrDefault(l => l.Name == toolLibrary.Name);
 
-            var commandSpec = _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
+            var depsFileRoot = Path.GetDirectoryName(lockFile.LockFilePath);
+            var depsFilePath = GetToolDepsFilePath(toolLibrary, lockFile, depsFileRoot);
+
+            return _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
                     lockFilePackageLibrary,
                     commandName,
                     args,
                     _allowedCommandExtensions,
                     projectContext.PackagesDirectory,
                     s_commandResolutionStrategy,
-                    null);
+                    depsFilePath);
         }
 
         private LockFile GetToolLockFile(
@@ -123,7 +127,7 @@ namespace Microsoft.DotNet.Cli.Utils
                 return null;
             }
 
-            LockFile lockfile = null;
+            LockFile lockFile = null;
 
             try
             {
@@ -141,9 +145,9 @@ namespace Microsoft.DotNet.Cli.Utils
             LibraryRange toolLibrary,
             string nugetPackagesRoot)
         {
-            var toolPathResolver = new ToolPathResolver(nugetPackagesRoot);
+            var toolPathCalculator = new ToolPathCalculator(nugetPackagesRoot);
 
-            return toolPathResolver.GetLockFilePath(
+            return toolPathCalculator.GetBestLockFilePath(
                 toolLibrary.Name, 
                 toolLibrary.VersionRange, 
                 s_toolPackageFramework);
@@ -192,8 +196,7 @@ namespace Microsoft.DotNet.Cli.Utils
             EnsureToolCsvDepsFileExists(toolLibrary, toolLockFile, depsCsvPath);
             EnsureToolJsonDepsFileExists(toolLibrary, toolLockFile, depsJsonPath);
 
-            // Todo: Change this to json when on shared framework
-            return depsCsvPath;
+            return depsJsonPath;
         }
 
         private void EnsureToolCsvDepsFileExists(
@@ -206,7 +209,7 @@ namespace Microsoft.DotNet.Cli.Utils
                 var projectContext = new ProjectContextBuilder()
                     .WithLockFile(toolLockFile)
                     .WithTargetFramework(s_toolPackageFramework.ToString())
-                    .WithRuntimeIdentifiers(s_currentRuntimeIdentifier)
+                    .WithRuntimeIdentifiers(new [] {s_currentRuntimeIdentifier})
                     .Build();
 
                 var exporter = projectContext.CreateExporter(Constants.DefaultConfiguration);
