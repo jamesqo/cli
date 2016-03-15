@@ -58,4 +58,5 @@ namespace Microsoft.DotNet.Tools.Restore
 
             return app.Execute(args);
         }
+    }
 }

@@ -12,6 +12,7 @@ using NuGet.Packaging;
 using NuGet.ProjectModel;
 
 using LockFile = Microsoft.DotNet.ProjectModel.Graph.LockFile;
+using FileFormatException = Microsoft.DotNet.ProjectModel.FileFormatException;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
@@ -185,37 +186,13 @@ namespace Microsoft.DotNet.Cli.Utils
             LockFile toolLockFile, 
             string depsPathRoot)
         {
-            var depsCsvPath = Path.Combine(
-                depsPathRoot,
-                toolLibrary.Name + FileNameSuffixes.Deps);
-
             var depsJsonPath = Path.Combine(
                 depsPathRoot,
                 toolLibrary.Name + FileNameSuffixes.DepsJson);
 
-            EnsureToolCsvDepsFileExists(toolLibrary, toolLockFile, depsCsvPath);
             EnsureToolJsonDepsFileExists(toolLibrary, toolLockFile, depsJsonPath);
 
             return depsJsonPath;
-        }
-
-        private void EnsureToolCsvDepsFileExists(
-            LibraryRange toolLibrary, 
-            LockFile toolLockFile, 
-            string depsPath)
-        {
-            if (!File.Exists(depsPath))
-            {
-                var projectContext = new ProjectContextBuilder()
-                    .WithLockFile(toolLockFile)
-                    .WithTargetFramework(s_toolPackageFramework.ToString())
-                    .WithRuntimeIdentifiers(new [] {s_currentRuntimeIdentifier})
-                    .Build();
-
-                var exporter = projectContext.CreateExporter(Constants.DefaultConfiguration);
-
-                Executable.WriteDepsCsvToPath(depsPath, exporter);
-            }
         }
 
         private void EnsureToolJsonDepsFileExists(
@@ -228,7 +205,7 @@ namespace Microsoft.DotNet.Cli.Utils
                 var projectContext = new ProjectContextBuilder()
                     .WithLockFile(toolLockFile)
                     .WithTargetFramework(s_toolPackageFramework.ToString())
-                    .WithRuntimeIdentifiers(s_currentRuntimeIdentifier)
+                    .WithRuntimeIdentifiers(new [] { s_currentRuntimeIdentifier })
                     .Build();
 
                 var exporter = projectContext.CreateExporter(Constants.DefaultConfiguration);
