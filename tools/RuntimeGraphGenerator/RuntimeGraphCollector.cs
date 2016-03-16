@@ -36,8 +36,24 @@ namespace Microsoft.DotNet.ProjectModel
         {
             foreach (var runtime in runtimes)
             {
-                // ExpandRuntime return runtime itself as first item so we are skiping it
-                yield return new RuntimeFallbacks(runtime, runtimeGraph.ExpandRuntime(runtime).Skip(1));
+                var importers = FindImporters(runtimeGraph, runtime);
+                foreach (var importer in importers)
+                {
+                    // ExpandRuntime return runtime itself as first item so we are skiping it
+                    yield return new RuntimeFallbacks(importer, runtimeGraph.ExpandRuntime(importer).Skip(1));
+                }
+            }
+        }
+
+        private IEnumerable<string> FindImporters(RuntimeGraph runtimeGraph, string runtime)
+        {
+            foreach (var runtimePair in runtimeGraph.Runtimes)
+            {
+                var expanded = runtimeGraph.ExpandRuntime(runtimePair.Key);
+                if (expanded.Contains(runtime))
+                {
+                    yield return runtimePair.Key;
+                }
             }
         }
     }

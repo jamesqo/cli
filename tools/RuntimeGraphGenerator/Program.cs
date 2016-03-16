@@ -46,7 +46,7 @@ namespace RuntimeGraphGenerator
                 return 1;
             }
 
-            if (runtimes.Count == 0)
+            if (runtimes == null || runtimes.Count == 0)
             {
                 Reporter.Error.WriteLine("No runtimes specified");
                 return 1;
@@ -72,7 +72,8 @@ namespace RuntimeGraphGenerator
                 var framework = NuGetFramework.Parse(context.TargetFramework);
                 var projectContext = ProjectContext.Create(projectDirectory, framework);
 
-                var exporter = projectContext.CreateExporter(string.Empty);
+                // Configuration is used only for P2P dependencies so were don't care
+                var exporter = projectContext.CreateExporter("Debug");
                 var manager = new RuntimeGraphManager();
                 var graph = manager.Collect(exporter.GetDependencies(LibraryType.Package));
                 var expandedGraph = manager.Expand(graph, runtimes);
@@ -88,7 +89,7 @@ namespace RuntimeGraphGenerator
                     expandedGraph
                     );
 
-                using (var depsStream = File.OpenWrite(depsFile))
+                using (var depsStream = File.Create(depsFile))
                 {
                     new DependencyContextWriter().Write(context, depsStream);
                 }
